@@ -14,16 +14,19 @@
             border-radius: 10px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
             padding: 20px;
+            max-width: 600px;
+            margin: auto;
         }
         .grid-option {
             cursor: pointer;
             margin: 0 5px;
-            padding: 10px 15px;
+            padding: 5px 10px;
             border-radius: 5px;
             border: 1px solid #ddd;
             background-color: #e9ecef;
             color: #495057;
             transition: background-color 0.3s, color 0.3s;
+            font-size: 0.9rem;
         }
         .grid-option:hover {
             background-color: #007bff;
@@ -34,15 +37,20 @@
             color: white;
         }
         .input-cell {
-            width: 60px;
+            width: 100px;
+            height: 30px;
             text-align: center;
+            font-size: 0.9rem;
             background-color: #f1f3f5;
         }
         .table-container {
             overflow-x: auto;
-            overflow-y: auto; 
-            max-height: 300px; 
             margin-top: 20px;
+            overflow-y: auto;
+            max-height: 200px;
+        }
+        .table {
+            font-size: 0.9rem;
         }
         .table th, .table td {
             text-align: center;
@@ -74,7 +82,7 @@
     
     <?php
     $gridLength = 3; 
-    $customerInput = str_repeat('0', $gridLength);
+    $customerInput = '---'; // Default value set to '---'
     $selectedGrid = '111';
 
     if ($_SERVER["REQUEST_METHOD"] == "POST") {
@@ -108,7 +116,7 @@
                             <td>Input</td>
                             <?php for ($i = 0; $i < $gridLength; $i++): ?>
                                 <td>
-                                    <input type="number" class="form-control input-cell" name="digit<?php echo $i; ?>" value="<?php echo isset($_POST["digit$i"]) ? htmlspecialchars($_POST["digit$i"]) : ''; ?>" min="1" max="9" required>
+                                    <input type="number" class="form-control input-cell" name="digit<?php echo $i; ?>" value="<?php echo isset($_POST["digit$i"]) ? htmlspecialchars($_POST["digit$i"]) : ''; ?>" min="0" max="9" required>
                                 </td>
                             <?php endfor; ?>
                         </tr>
@@ -122,16 +130,16 @@
     <script>
         let modulus = 10;
         let gridValues = {};
-        let step = 1;
+        
 
         fetch('formula_values.json')
             .then(response => response.json())
             .then(data => {
                 modulus = data.modulus;
                 gridValues = data.gridValues;
-                step=data.steps
+                step = data.steps;
                 updateGridOptions();
-                showGrid('<?php echo htmlspecialchars($selectedGrid); ?>');
+                showGrid('<?php echo htmlspecialchars($selectedGrid); ?>', <?php echo isset($_POST['selectedGrid']) ? 'false' : 'true'; ?>); // Show default placeholder if not calculated
             })
             .catch(error => console.error('Error fetching formula values:', error));
 
@@ -145,10 +153,10 @@
             }
         }
 
-        function showGrid(gridValue) {
+        function showGrid(gridValue, isDefault = false) {
             document.getElementById('selectedGrid').value = gridValue;
             const gridTableContainer = document.getElementById('gridTableContainer');
-            gridTableContainer.innerHTML = generateTable(gridValue, '<?php echo htmlspecialchars($customerInput); ?>');
+            gridTableContainer.innerHTML = generateTable(gridValue, isDefault ? '---' : '<?php echo htmlspecialchars($customerInput); ?>');
 
             document.querySelectorAll('.grid-option').forEach(tab => {
                 tab.classList.remove('active');
@@ -157,7 +165,7 @@
         }
 
         function generateTable(gridval, num) {
-            let numArr = num.split('');
+            let numArr = num === '---' ? Array(gridval.length).fill('---') : num.split('');
             let gridarr = gridval.split('');
 
             let table = '<table class="table table-bordered"><thead><tr><th>Step</th>';
@@ -174,36 +182,43 @@
 
             table += '<tr><td>Original</td>';
             for (let value of numArr) {
-                table += '<td>' + value + '</td>';
+                table += '<td>' + (value === '---' ? '---' : value) + '</td>';
             }
             table += '</tr>';
+            step = 1;
 
-            let originalNum = num;
-            let newNum;
-            do {
-                newNum = [];
-                for (let i = 0; i < numArr.length; i++) {
-                    let sum = parseInt(numArr[i]) + parseInt(gridarr[i]);
-                    newNum[i] = sum % modulus; 
-                }
-                table += '<tr><td>Step ' + step + '</td>';
-                for (let value of newNum) {
-                    table += '<td>' + value + '</td>';
+            if (num !== '---') {
+                let originalNum = num;
+                let newNum;
+                do {
+                    newNum = [];
+                    for (let i = 0; i < numArr.length; i++) {
+                        let sum = parseInt(numArr[i]) + parseInt(gridarr[i]);
+                        newNum[i] = sum % modulus; 
+                    }
+                    table += '<tr><td>Step ' + step + '</td>';
+                    for (let value of newNum) {
+                        table += '<td>' + value + '</td>';
+                    }
+                    table += '</tr>';
+
+                    numArr = newNum.slice();
+                    step++;
+                } while (newNum.join('') !== originalNum);
+            } else {
+                table += '<tr><td>Step 1</td>';
+                for (let i = 0; i < gridarr.length; i++) {
+                    table += '<td>---</td>';
                 }
                 table += '</tr>';
-
-                numArr = newNum.slice();
-                step++;
-            } while (newNum.join('') !== originalNum);
+            }
 
             table += '</tbody></table>';
             return table;
         }
 
         document.addEventListener('DOMContentLoaded', function() {
-            if (modulus !== 10) {
-                showGrid('<?php echo htmlspecialchars($selectedGrid); ?>');
-            }
+            showGrid('<?php echo htmlspecialchars($selectedGrid); ?>', <?php echo isset($_POST['selectedGrid']) ? 'false' : 'true'; ?>); // Initialize with placeholders if not calculated
         });
     </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
