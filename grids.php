@@ -13,7 +13,7 @@
             background-color: #ffffff;
             border-radius: 10px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            padding: 20px;
+            padding: 10px;
             max-width: 600px;
             margin: auto;
         }
@@ -40,17 +40,14 @@
             width: 100px;
             height: 30px;
             text-align: center;
-            font-size: 0.9rem;
+            font-size: 0.8rem;
             background-color: #f1f3f5;
         }
         .table-container {
             overflow-x: auto;
-            margin-top: 20px;
-            overflow-y: auto;
-            max-height: 200px;
         }
         .table {
-            font-size: 0.9rem;
+            font-size: 0.8rem;
         }
         .table th, .table td {
             text-align: center;
@@ -77,12 +74,11 @@
     </style>
 </head>
 <body>
-<div class="container mt-5">
-    <h2 class="mb-4">Grid Calculation Table</h2>
-    
+<h2 class="text-center">Grid Calculation Table</h2>
+<div class="container">
     <?php
     $gridLength = 3; 
-    $customerInput = '---'; // Default value set to '---'
+    $customerInput = '---'; 
     $selectedGrid = '111';
 
     if ($_SERVER["REQUEST_METHOD"] == "POST") {
@@ -99,7 +95,9 @@
     <form id="gridForm" method="post" action="">
         <input type="hidden" name="selectedGrid" id="selectedGrid" value="<?php echo htmlspecialchars($selectedGrid); ?>">
         <div class="mb-4">
-            <div class="d-flex flex-wrap mb-3">
+            <div class="d-flex flex-wrap mb-1 justify-content-between align-items-center">
+                <div id="gridOptionsContainer" class="d-flex flex-wrap"></div>
+                <button type="submit" class="btn btn-primary">Calculate</button>
             </div>
             <div class="table-container">
                 <table class="table table-bordered">
@@ -124,27 +122,24 @@
                 </table>
             </div>
         </div>
-        <button type="submit" class="btn btn-primary">Calculate</button>
     </form>
-    <div id="gridTableContainer" class="mt-4 table-container"></div>
+    <div id="gridTableContainer" class=" table-container"></div>
     <script>
         let modulus = 10;
         let gridValues = {};
-        
 
         fetch('formula_values.json')
             .then(response => response.json())
             .then(data => {
                 modulus = data.modulus;
                 gridValues = data.gridValues;
-                step = data.steps;
                 updateGridOptions();
                 showGrid('<?php echo htmlspecialchars($selectedGrid); ?>', <?php echo isset($_POST['selectedGrid']) ? 'false' : 'true'; ?>); // Show default placeholder if not calculated
             })
             .catch(error => console.error('Error fetching formula values:', error));
 
         function updateGridOptions() {
-            const gridOptionsContainer = document.querySelector('.d-flex');
+            const gridOptionsContainer = document.getElementById('gridOptionsContainer');
             gridOptionsContainer.innerHTML = '';
             for (let key in gridValues) {
                 if (gridValues.hasOwnProperty(key)) {
